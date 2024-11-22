@@ -1,13 +1,14 @@
-from .Models import TotalBRModel
-from .Models import StrainBRModel
-# from .Models import StrainAgeGroupBRModel
-from .Models import AgeGroupBRModel
 from .Interface import BRModel
 
-class FactoryBRModel:
+# from .Models import StrainAgeGroupBRModel
+from .Models import AgeGroupBRModel, StrainBRModel, TotalBRModel
 
-    def total() -> BRModel:
+
+class FactoryBRModel:
+    @classmethod
+    def total(self) -> BRModel:
         return TotalBRModel()
 
-    def age_group() -> BRModel:
+    @classmethod
+    def age_group(self) -> BRModel:
         return AgeGroupBRModel()
