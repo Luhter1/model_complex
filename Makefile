@@ -1,7 +1,7 @@
 remove_cache:
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 
-sort:
+isort:
 	isort ./model_complex/*.py ./model_complex/*/*.py ./model_complex/*/*/*.py
 
 black:

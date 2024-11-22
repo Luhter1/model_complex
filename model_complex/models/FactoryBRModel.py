@@ -1,5 +1,4 @@
 from .Interface import BRModel
-
 # from .Models import StrainAgeGroupBRModel
 from .Models import AgeGroupBRModel, StrainBRModel, TotalBRModel
 
