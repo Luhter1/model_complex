@@ -1,6 +1,5 @@
 import numpy as np
 import optuna
-import pandas as pd
 import pymc as pm
 from scipy.optimize import dual_annealing
 from sklearn.metrics import r2_score
@@ -34,7 +33,7 @@ class Calibration:
         self.model = model
         self.data = data
 
-    def abc_calibration(self, sample=100, epsilon=3000):
+    def abc_calibration(self, sample=100, epsilon=3000, with_rho=False):
         """
         TODO
 
@@ -42,13 +41,15 @@ class Calibration:
 
         alpha_len, beta_len = self.model.params()
 
-        def simulation_func(rng, alpha, beta, size=None):
+        rho = self.rho
+
+        def simulation_func(rng, alpha, beta, rho, size=None):
             self.model.simulate(
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=self.init_infectious,
-                rho=self.rho,
-                modeling_duration=int(len(self.data) / alpha_len),
+                rho=rho,
+                modeling_duration=len(self.data) // alpha_len,
             )
             return self.model.newly_infected
 
@@ -56,14 +57,17 @@ class Calibration:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
 
+            if with_rho:
+                rho = pm.Uniform(name="rho", lower=with_rho[0], upper=with_rho[1])
+
             sim = pm.Simulator(
                 "sim",
                 simulation_func,
-                alpha,
+                list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
+                rho, 
                 epsilon=epsilon,
                 observed=self.data,
-                ndims_params=[alpha_len, beta_len],
             )
 
             idata = pm.sample_smc(progressbar=False)
@@ -77,6 +81,14 @@ class Calibration:
         beta = [
             np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
         ]
+
+        self.model.simulate(
+            alpha=[a.mean() for a in alpha],
+            beta=[b.mean() for b in beta],
+            initial_infectious=self.init_infectious,
+            rho=self.rho,
+            modeling_duration=len(self.data) // alpha_len,
+        )
 
         return alpha, beta
 
@@ -98,7 +110,7 @@ class Calibration:
                 beta=beta,
                 initial_infectious=self.init_infectious,
                 rho=self.rho,
-                modeling_duration=int(len(self.data) / alpha_len),
+                modeling_duration=len(self.data) // alpha_len,
             )
 
             return r2_score(self.data, self.model.newly_infected)
@@ -115,7 +127,7 @@ class Calibration:
             beta=beta,
             initial_infectious=self.init_infectious,
             rho=self.rho,
-            modeling_duration=int(len(self.data) / alpha_len),
+            modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
@@ -141,7 +153,7 @@ class Calibration:
                 beta=beta,
                 initial_infectious=self.init_infectious,
                 rho=self.rho,
-                modeling_duration=int(len(self.data) / alpha_len),
+                modeling_duration=len(self.data) // alpha_len,
             )
 
             return -r2_score(self.data, self.model.newly_infected)
@@ -157,7 +169,7 @@ class Calibration:
             beta=beta,
             initial_infectious=self.init_infectious,
             rho=self.rho,
-            modeling_duration=int(len(self.data) / alpha_len),
+            modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
@@ -214,12 +226,11 @@ class Calibration:
             sim = pm.Simulator(
                 "sim",
                 simulation_func,
-                alpha,
+                list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
                 rho,
-                init_infectious,
+                list(init_infectious) + [0] * (beta_len - len(init_infectious)),
                 epsilon=epsilon,
-                ndims_params=[alpha_len, beta_len, 1, alpha_len],
                 observed=self.data,
             )
 
@@ -245,5 +256,14 @@ class Calibration:
         beta = [
             np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
         ]
+
+        # запускаем, чтобю в модели были результаты с лучшими параметрами
+        self.model.simulate(
+            alpha=[a.mean() for a in alpha],
+            beta=[b.mean() for b in beta],
+            initial_infectious=self.init_infectious,
+            rho=self.rho,
+            modeling_duration=len(self.data) // alpha_len,
+        )
 
         return alpha, beta
