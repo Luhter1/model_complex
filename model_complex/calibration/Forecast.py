@@ -48,6 +48,8 @@ class Forecats:
 
             new_res = np.array(self.model.get_result())
 
-            res = np.array([np.minimum(res[0], new_res[0]), np.maximum(res[1], new_res[1])])
+            for i in range(len(self.init_infectious)):
+                res[i, :, 0] = np.minimum(res[i, :, 0], new_res[i])
+                res[i, :, 1] = np.maximum(res[i, :, 1], new_res[i])
 
         return res
