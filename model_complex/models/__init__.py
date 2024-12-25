@@ -1,2 +1,2 @@
 from .FactoryBRModel import FactoryBRModel
-from .Interface.BRModel import BRModel
+from .Interface.Model import Model

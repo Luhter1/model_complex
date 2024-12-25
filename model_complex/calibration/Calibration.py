@@ -4,7 +4,8 @@ import pymc as pm
 from scipy.optimize import dual_annealing
 from sklearn.metrics import r2_score
 
-from ..models import BRModel
+from ..models import Model
+from ..utils import ModelParams
 
 optuna.logging.set_verbosity(optuna.logging.ERROR)
 
@@ -13,10 +14,9 @@ class Calibration:
 
     def __init__(
         self,
-        init_infectious: list[int],
-        model: BRModel,
+        model: Model,
         data: list,
-        rho: int,
+        model_params: ModelParams
     ) -> None:
         """
         Calibration class
@@ -26,12 +26,13 @@ class Calibration:
         :param init_infectious: Number of initial infected people
         :param model: Model for calibration
         :param data: Observed data for calibrating process
-        :param rho: People's population
+        :param population_size: People's population
         """
-        self.rho = rho
-        self.init_infectious = init_infectious
+        self.population_size = model_params.population_size
+        self.init_infectious = model_params.initial_infectious
         self.model = model
         self.data = data
+
 
     def abc_calibration(self, sample=100, epsilon=3000, with_rho=False):
         """
@@ -39,33 +40,33 @@ class Calibration:
 
         """
 
-        alpha_len, beta_len = self.model.params()
+        alpha_len, beta_len = self.model.alpha_beta_dims()
 
-        rho = self.rho
+        population_size = self.population_size
 
-        def simulation_func(rng, alpha, beta, rho, size=None):
+        def simulation_func(rng, alpha, beta, population_size, size=None):
             self.model.simulate(
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=self.init_infectious,
-                rho=rho,
+                population_size=population_size,
                 modeling_duration=len(self.data) // alpha_len,
             )
-            return self.model.newly_infected
+            return self.model.get_newly_infected()
 
         with pm.Model() as model:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
 
             if with_rho:
-                rho = pm.Uniform(name="rho", lower=with_rho[0], upper=with_rho[1])
+                population_size = pm.Uniform(name="population_size", lower=with_rho[0], upper=with_rho[1])
 
             sim = pm.Simulator(
                 "sim",
                 simulation_func,
                 list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
-                rho, 
+                population_size, 
                 epsilon=epsilon,
                 observed=self.data,
             )
@@ -82,15 +83,20 @@ class Calibration:
             np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
         ]
 
-        self.model.simulate(
+        new_params = ModelParams(
             alpha=[a.mean() for a in alpha],
             beta=[b.mean() for b in beta],
             initial_infectious=self.init_infectious,
-            rho=self.rho,
+            population_size=self.population_size,
+        )
+
+        self.model.simulate(
+            model_params=new_params,
             modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
+
 
     def optuna_calibration(self, n_trials=1000):
         """
@@ -98,7 +104,7 @@ class Calibration:
 
         """
 
-        alpha_len, beta_len = self.model.params()
+        alpha_len, beta_len = self.model.alpha_beta_dims()
 
         def model(trial):
 
@@ -109,11 +115,11 @@ class Calibration:
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=self.init_infectious,
-                rho=self.rho,
+                population_size=self.population_size,
                 modeling_duration=len(self.data) // alpha_len,
             )
 
-            return r2_score(self.data, self.model.newly_infected)
+            return r2_score(self.data, self.model.get_newly_infected())
 
         study = optuna.create_study(direction="maximize")
         study.optimize(model, n_trials=n_trials)
@@ -122,15 +128,20 @@ class Calibration:
         beta = [study.best_params[f"beta_{i}"] for i in range(beta_len)]
 
         # запускаем, чтобы в модели были результаты с лучшими параметрами
-        self.model.simulate(
+        new_params = ModelParams(
             alpha=alpha,
             beta=beta,
             initial_infectious=self.init_infectious,
-            rho=self.rho,
+            population_size=self.population_size
+        )
+        
+        self.model.simulate(
+            model_params=new_params,
             modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
+
 
     def annealing_calibration(self):
         """
@@ -138,7 +149,7 @@ class Calibration:
 
         """
 
-        alpha_len, beta_len = self.model.params()
+        alpha_len, beta_len = self.model.alpha_beta_dims()
 
         lw = [0] * (alpha_len + beta_len)
         up = [1] * (alpha_len + beta_len)
@@ -148,15 +159,19 @@ class Calibration:
             alpha = x[:alpha_len]
             beta = x[alpha_len:]
 
-            self.model.simulate(
+            new_params = ModelParams(
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=self.init_infectious,
-                rho=self.rho,
+                population_size=self.population_size
+            )
+
+            self.model.simulate(
+                model_params=new_params,
                 modeling_duration=len(self.data) // alpha_len,
             )
 
-            return -r2_score(self.data, self.model.newly_infected)
+            return -r2_score(self.data, self.model.get_newly_infected())
 
         ret = dual_annealing(model, bounds=list(zip(lw, up)))
 
@@ -164,15 +179,20 @@ class Calibration:
         beta = ret.x[alpha_len:]
 
         # запускаем, чтобю в модели были результаты с лучшими параметрами
-        self.model.simulate(
+        new_params = ModelParams(
             alpha=alpha,
             beta=beta,
             initial_infectious=self.init_infectious,
-            rho=self.rho,
+            population_size=self.population_size
+        )
+        
+        self.model.simulate(
+            model_params=new_params,
             modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
+
 
     def mcmc_calibration(
         self,
@@ -193,27 +213,32 @@ class Calibration:
             - chains -- number of chains
         """
 
-        alpha_len, beta_len = self.model.params()
+        alpha_len, beta_len = self.model.alpha_beta_dims()
         init_infectious = self.init_infectious
-        rho = self.rho
+        population_size = self.population_size
 
-        def simulation_func(rng, alpha, beta, rho, init_infectious, size=None):
+        def simulation_func(rng, alpha, beta, population_size, init_infectious, size=None):
 
-            self.model.simulate(
+            new_params = ModelParams(
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=init_infectious,
-                rho=rho,
+                population_size=population_size,
+            )
+            
+            self.model.simulate(
+                model_params=new_params,
                 modeling_duration=len(self.data) // alpha_len,
             )
-            return self.model.newly_infected
+
+            return self.model.get_newly_infected()
 
         with pm.Model() as pm_model:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
 
             if with_rho:
-                rho = pm.Uniform(name="rho", lower=with_rho[0], upper=with_rho[1])
+                population_size = pm.Uniform(name="population_size", lower=with_rho[0], upper=with_rho[1])
 
             if with_initi:
                 init_infectious = pm.Uniform(
@@ -228,7 +253,7 @@ class Calibration:
                 simulation_func,
                 list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
-                rho,
+                population_size,
                 list(init_infectious) + [0] * (beta_len - len(init_infectious)),
                 epsilon=epsilon,
                 observed=self.data,
@@ -258,12 +283,12 @@ class Calibration:
         ]
 
         # запускаем, чтобю в модели были результаты с лучшими параметрами
-        self.model.simulate(
-            alpha=[a.mean() for a in alpha],
-            beta=[b.mean() for b in beta],
-            initial_infectious=self.init_infectious,
-            rho=self.rho,
-            modeling_duration=len(self.data) // alpha_len,
-        )
+        # self.model.simulate(
+        #     alpha=[a.mean() for a in alpha],
+        #     beta=[b.mean() for b in beta],
+        #     initial_infectious=self.init_infectious,
+        #     population_size=self.population_size,
+        #     modeling_duration=len(self.data) // alpha_len,
+        # )
 
         return alpha, beta

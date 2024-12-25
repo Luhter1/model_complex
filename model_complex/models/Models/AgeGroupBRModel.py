@@ -1,81 +1,90 @@
 import numpy as np
 import pymc as pm
 
-from ..Interface import BRModel
+from ..Interface import Model
+from ...utils import ModelParams
 
 
-class AgeGroupBRModel(BRModel):
+class AgeGroupBRModel(Model):
+    """
+    Baroyan-Rvachev model for case of several age groups
+    """
 
-    def __init__(self):
-        """
-        Model for case of several age groups
-        """
-        self.alpha_len = 2
-        self.beta_len = 4
+    def __init__(self) -> None:
+        self.alpha_dim = 2
+        self.beta_dim = 4
+
 
     def simulate(
         self,
-        alpha: list[float],
-        beta: list[float],
-        initial_infectious: list[int],
-        rho: int,
-        modeling_duration: int,
-    ):
+        model_params: ModelParams,
+        modeling_duration: int
+    ) -> None:
         """
-        Download epidemiological excel data file from the subdirectory of epid_data.
-        epid_data directory looks like 'epid_data/{city}/epid_data.xlsx'.
+        Launch simulation using Baroyan-Rvachev model for case of several age groups
 
-        :param alpha: Fraction of non-immune people
-        :param beta: Effective contacts intensivity
-        :param initial_infectious: Numbers of initial infected people in the simulation
-        :param rho: Numbers of people in simulation
+        :param model_params: class that contains model parameters
         :param modeling_duration: duration of modeling
 
         :return:
         """
-        # assert (
-        #     len(alpha) == self.beta_len
-        # ), f"Размерность alpha={self.alpha_len}, а получена {len(alpha)}"
-        # assert (
-        #     len(beta) == self.beta_len
-        # ), f"Размерность beta={self.beta_len}, а получена {len(beta)}"
-        # assert (
-        #     len(initial_infectious) == self.alpha_len
-        # ), f"Размерность initial_infectious={self.alpha_len}, а получена {len(initial_infectious)}"
+        assert len(model_params.alpha) == self.alpha_dim
+        assert len(model_params.beta) == self.beta_dim
+        assert len(model_params.initial_infectious) == self.alpha_dim
+        assert (np.all(np.array(model_params.alpha) > 0) 
+            and np.all(np.array(model_params.alpha) < 1))
+        assert (np.all(np.array(model_params.beta) > 0) 
+            and np.all(np.array(model_params.beta) < 1))
 
-        self.newly_infected = []
+        self.newly_infected = [
+            self.__simulate_one_group(
+                self, 
+                model_params, 
+                modeling_duration, 
+                group_num
+            )
+            for group_num in range(2)
+        ]
 
-        for j in range(2):
-            # SETTING UP INITIAL CONDITIONS
-            total_infected = np.zeros(modeling_duration)
-            newly_infected = np.zeros(modeling_duration)
-            susceptible = np.zeros(modeling_duration)
 
-            total_infected[0] = initial_infectious[j]
-            newly_infected[0] = initial_infectious[j]
+    def __simulate_one_group(
+        self,
+        model_params: ModelParams,
+        modeling_duration: int,
+        group_num: int
+    ) -> list:
+        # SETTING UP INITIAL CONDITIONS
+        initial_susceptible = int(model_params.alpha[group_num] 
+                                * model_params.population_size)
 
-            initial_susceptible = int(alpha[j] * rho)
-            susceptible[0] = initial_susceptible
+        total_infected = np.zeros(modeling_duration)
+        newly_infected = np.zeros(modeling_duration)
+        susceptible = np.zeros(modeling_duration)
 
-            # SIMULATION
-            for day in range(modeling_duration - 1):
-                total_infected[day] = min(
-                    sum(
-                        newly_infected[day - tau] * self.br_function(tau)
-                        for tau in range(len(self.br_func_array))
-                        if (day - tau) >= 0
-                    ),
-                    rho,
-                )
+        total_infected[0] = model_params.initial_infectious[0]
+        newly_infected[0] = model_params.initial_infectious[0]
+        susceptible[0] = initial_susceptible
 
-                newly_infected[day + 1] = min(
-                    sum(
-                        beta[2 * i + j] * susceptible[day] * total_infected[day] / rho
-                        for i in range(2)
-                    ),
-                    susceptible[day],
-                )
+        # SIMULATION
+        for day in range(modeling_duration - 1):
+            total_infected[day] = min(
+                sum(
+                    newly_infected[day - tau] * self.br_function(tau)
+                    for tau in range(len(self.br_func_array))
+                    if (day - tau) >= 0
+                ),
+                model_params.population_size,
+            )
 
-                susceptible[day + 1] = susceptible[day] - newly_infected[day + 1]
+            newly_infected[day + 1] = min(
+                sum(
+                    model_params.beta[2 * i + group_num] * susceptible[day] 
+                    * total_infected[day] / model_params.population_size
+                    for i in range(2)
+                ),
+                susceptible[day],
+            )
 
-            self.newly_infected += list(newly_infected)
+            susceptible[day + 1] = susceptible[day] - newly_infected[day + 1]
+
+        return list(newly_infected)

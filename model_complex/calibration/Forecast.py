@@ -1,54 +1,51 @@
 import numpy as np
 
-from ..models import BRModel
+from ..models import Model
+from ..utils import ModelParams
 
 class Forecats:
 
-    # alpha, beta
-    # data
-    # на сколько строить прогноз
-    # model
-    def __init__(
-        self,
+    @classmethod
+    def forecast(
         data: list,
-        model: BRModel,
-        init_infectious: list[int],
-        alpha: list[int],
-        beta: list[int],
-        rho: int,
+        model: Model,
+        model_params: ModelParams,
         duration: int,
-    ) -> None:
+    ) -> np.array:
         
-        self.data = data
-        self.model = model
-        self.init_infectious = init_infectious
-        self.alpha = alpha
-        self.beta = beta
-        self.rho = rho
-        self.duration = duration
+        data_size = duration + (len(data)
+                                //len(model_params.initial_infectious))
+        res = np.array([
+                [ 
+                    [float('inf'), float('-inf')] 
+                    for _ in range(data_size)
+                ] 
+                for j in range(len(model_params.initial_infectious))
+        ])
 
+        # to avoid creating new_params again at each loop
+        new_params = ModelParams(
+            alpha=[0],
+            beta=[0],
+            initial_infectious=[0],
+            population_size=0,
+        )
 
+        for a, b in zip(zip(*model_params.alpha), zip(*model_params.beta)):
 
-    def forecast(self):
-        data_size = len(self.data)//len(self.init_infectious) + self.duration
+            new_params.alpha = a
+            new_params.beta = b
+            new_params.initial_infectious = model_params.initial_infectious
+            new_params.population_size = model_params.population_size
 
-        res = np.array(
-                [[[float('inf'), float('-inf')] for _ in range(data_size)] for j in range(len(self.init_infectious))]
-            )
-
-        for a, b in zip(zip(*self.alpha), zip(*self.beta)):
-
-            self.model.simulate(
-                alpha=a, 
-                beta=b, 
-                initial_infectious=self.init_infectious, 
-                rho=self.rho, 
+            model.simulate(
+                model_params=new_params,
                 modeling_duration=data_size
             )
 
-            new_res = np.array(self.model.get_result())
+            new_res = np.array(model.get_result())
 
-            for i in range(len(self.init_infectious)):
+            for i in range(len(model_params.initial_infectious)):
                 res[i, :, 0] = np.minimum(res[i, :, 0], new_res[i])
                 res[i, :, 1] = np.maximum(res[i, :, 1], new_res[i])
 

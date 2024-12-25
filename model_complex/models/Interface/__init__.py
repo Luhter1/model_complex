@@ -1,1 +1,1 @@
-from .BRModel import BRModel
+from .Model import Model
