@@ -19,6 +19,14 @@ ipykernel = "^6.29.5"
 isort = "^5.13.2"
 black = "^24.10.0"
 ipywidgets = "^8.1.5"
+pre-commit = "^4.0.1"
+
+[tool.black]
+line-length = 109
+target-version = ['py37']
+
+[tool.isort]
+profile = "black"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,3 +1,7 @@
+autoformatting:
+	isort ./model_complex/*.py ./model_complex/*/*.py ./model_complex/*/*/*.py
+	black ./model_complex/*.py ./model_complex/*/*.py ./model_complex/*/*/*.py
+
 remove_cache:
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 

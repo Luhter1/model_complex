@@ -12,12 +12,7 @@ optuna.logging.set_verbosity(optuna.logging.ERROR)
 
 class Calibration:
 
-    def __init__(
-        self,
-        model: Model,
-        data: list,
-        model_params: ModelParams
-    ) -> None:
+    def __init__(self, model: Model, data: list, model_params: ModelParams) -> None:
         """
         Calibration class
 
@@ -32,7 +27,6 @@ class Calibration:
         self.init_infectious = model_params.initial_infectious
         self.model = model
         self.data = data
-
 
     def abc_calibration(self, sample=100, epsilon=3000, with_rho=False):
         """
@@ -66,7 +60,7 @@ class Calibration:
                 simulation_func,
                 list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
-                population_size, 
+                population_size,
                 epsilon=epsilon,
                 observed=self.data,
             )
@@ -75,13 +69,8 @@ class Calibration:
 
         posterior = idata.posterior.stack(samples=("draw", "chain"))
 
-        alpha = [
-            np.random.choice(posterior["alpha"][i], size=sample)
-            for i in range(alpha_len)
-        ]
-        beta = [
-            np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
-        ]
+        alpha = [np.random.choice(posterior["alpha"][i], size=sample) for i in range(alpha_len)]
+        beta = [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
 
         new_params = ModelParams(
             alpha=[a.mean() for a in alpha],
@@ -96,7 +85,6 @@ class Calibration:
         )
 
         return alpha, beta
-
 
     def optuna_calibration(self, n_trials=1000):
         """
@@ -132,16 +120,15 @@ class Calibration:
             alpha=alpha,
             beta=beta,
             initial_infectious=self.init_infectious,
-            population_size=self.population_size
+            population_size=self.population_size,
         )
-        
+
         self.model.simulate(
             model_params=new_params,
             modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
-
 
     def annealing_calibration(self):
         """
@@ -163,7 +150,7 @@ class Calibration:
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=self.init_infectious,
-                population_size=self.population_size
+                population_size=self.population_size,
             )
 
             self.model.simulate(
@@ -183,16 +170,15 @@ class Calibration:
             alpha=alpha,
             beta=beta,
             initial_infectious=self.init_infectious,
-            population_size=self.population_size
+            population_size=self.population_size,
         )
-        
+
         self.model.simulate(
             model_params=new_params,
             modeling_duration=len(self.data) // alpha_len,
         )
 
         return alpha, beta
-
 
     def mcmc_calibration(
         self,
@@ -225,7 +211,7 @@ class Calibration:
                 initial_infectious=init_infectious,
                 population_size=population_size,
             )
-            
+
             self.model.simulate(
                 model_params=new_params,
                 modeling_duration=len(self.data) // alpha_len,
@@ -274,13 +260,8 @@ class Calibration:
 
         posterior = idata.posterior.stack(samples=("draw", "chain"))
 
-        alpha = [
-            np.random.choice(posterior["alpha"][i], size=sample)
-            for i in range(alpha_len)
-        ]
-        beta = [
-            np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
-        ]
+        alpha = [np.random.choice(posterior["alpha"][i], size=sample) for i in range(alpha_len)]
+        beta = [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
 
         # запускаем, чтобю в модели были результаты с лучшими параметрами
         # self.model.simulate(
