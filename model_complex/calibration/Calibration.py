@@ -11,8 +11,13 @@ optuna.logging.set_verbosity(optuna.logging.ERROR)
 
 
 class Calibration:
+    """
+    Calibration class
+    """
 
-    def __init__(self, model: Model, data: list, model_params: ModelParams) -> None:
+    def __init__(
+        self, model: Model, data: list, population_size: int, init_infectious: list
+    ) -> None:
         """
         Calibration class
 
@@ -23,8 +28,8 @@ class Calibration:
         :param data: Observed data for calibrating process
         :param population_size: People's population
         """
-        self.population_size = model_params.population_size
-        self.init_infectious = model_params.initial_infectious
+        self.population_size = population_size
+        self.init_infectious = init_infectious
         self.model = model
         self.data = data
 
@@ -33,27 +38,36 @@ class Calibration:
         TODO
 
         """
-
+        # !!!! Надо ли сохранять with_rho
         alpha_len, beta_len = self.model.alpha_beta_dims()
 
         population_size = self.population_size
 
-        def simulation_func(rng, alpha, beta, population_size, size=None):
-            self.model.simulate(
+        # ф-я симуляции
+        def simulation_func(rng, alpha, beta, pop_size, size=None):
+
+            new_params = ModelParams(
                 alpha=alpha,
                 beta=beta,
                 initial_infectious=self.init_infectious,
-                population_size=population_size,
+                population_size=pop_size,
+            )
+
+            self.model.simulate(
+                model_params=new_params,
                 modeling_duration=len(self.data) // alpha_len,
             )
             return self.model.get_newly_infected()
 
+        # модель
         with pm.Model() as model:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
 
             if with_rho:
-                population_size = pm.Uniform(name="population_size", lower=with_rho[0], upper=with_rho[1])
+                population_size = pm.Uniform(
+                    name="population_size", lower=with_rho[0], upper=with_rho[1]
+                )
 
             sim = pm.Simulator(
                 "sim",
@@ -69,8 +83,12 @@ class Calibration:
 
         posterior = idata.posterior.stack(samples=("draw", "chain"))
 
-        alpha = [np.random.choice(posterior["alpha"][i], size=sample) for i in range(alpha_len)]
-        beta = [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
+        alpha = [
+            np.random.choice(posterior["alpha"][i], size=sample) for i in range(alpha_len)
+        ]
+        beta = [
+            np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
+        ]
 
         new_params = ModelParams(
             alpha=[a.mean() for a in alpha],
@@ -203,7 +221,9 @@ class Calibration:
         init_infectious = self.init_infectious
         population_size = self.population_size
 
-        def simulation_func(rng, alpha, beta, population_size, init_infectious, size=None):
+        def simulation_func(
+            rng, alpha, beta, population_size, init_infectious, size=None
+        ):
 
             new_params = ModelParams(
                 alpha=alpha,
@@ -224,7 +244,9 @@ class Calibration:
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
 
             if with_rho:
-                population_size = pm.Uniform(name="population_size", lower=with_rho[0], upper=with_rho[1])
+                population_size = pm.Uniform(
+                    name="population_size", lower=with_rho[0], upper=with_rho[1]
+                )
 
             if with_initi:
                 init_infectious = pm.Uniform(
@@ -260,8 +282,12 @@ class Calibration:
 
         posterior = idata.posterior.stack(samples=("draw", "chain"))
 
-        alpha = [np.random.choice(posterior["alpha"][i], size=sample) for i in range(alpha_len)]
-        beta = [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
+        alpha = [
+            np.random.choice(posterior["alpha"][i], size=sample) for i in range(alpha_len)
+        ]
+        beta = [
+            np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
+        ]
 
         # запускаем, чтобю в модели были результаты с лучшими параметрами
         # self.model.simulate(

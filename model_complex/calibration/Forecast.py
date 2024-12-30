@@ -3,8 +3,8 @@ import numpy as np
 from ..models import Model
 from ..utils import ModelParams
 
-class Forecats:
 
+class Forecast:
     @classmethod
     def forecast(
         data: list,
@@ -12,16 +12,14 @@ class Forecats:
         model_params: ModelParams,
         duration: int,
     ) -> np.array:
-        
-        data_size = duration + (len(data)
-                                //len(model_params.initial_infectious))
-        res = np.array([
-                [ 
-                    [float('inf'), float('-inf')] 
-                    for _ in range(data_size)
-                ] 
+
+        data_size = duration + (len(data) // len(model_params.initial_infectious))
+        res = np.array(
+            [
+                [[float("inf"), float("-inf")] for _ in range(data_size)]
                 for j in range(len(model_params.initial_infectious))
-        ])
+            ]
+        )
 
         # to avoid creating new_params again at each loop
         new_params = ModelParams(
@@ -38,10 +36,7 @@ class Forecats:
             new_params.initial_infectious = model_params.initial_infectious
             new_params.population_size = model_params.population_size
 
-            model.simulate(
-                model_params=new_params,
-                modeling_duration=data_size
-            )
+            model.simulate(model_params=new_params, modeling_duration=data_size)
 
             new_res = np.array(model.get_result())
 

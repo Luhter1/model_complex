@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import numpy as np
 
 
 @dataclass
@@ -12,6 +11,7 @@ class ModelParams:
     :param population_size: Numbers of people in simulation
     :param initial_infectious: Numbers of initial infected people in the simulation
     """
+
     alpha: list[float]
     beta: list[float]
     population_size: int

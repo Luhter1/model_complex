@@ -1,1 +1,3 @@
-from ModelParams import ModelParams
+from .ModelParams import ModelParams
+
+__all__ = ["ModelParams"]

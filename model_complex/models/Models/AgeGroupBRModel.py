@@ -1,8 +1,7 @@
 import numpy as np
-import pymc as pm
 
-from ..Interface import Model
 from ...utils import ModelParams
+from ..Interface import Model
 
 
 class AgeGroupBRModel(Model):
@@ -14,12 +13,7 @@ class AgeGroupBRModel(Model):
         self.alpha_dim = 2
         self.beta_dim = 4
 
-
-    def simulate(
-        self,
-        model_params: ModelParams,
-        modeling_duration: int
-    ) -> None:
+    def simulate(self, model_params: ModelParams, modeling_duration: int) -> None:
         """
         Launch simulation using Baroyan-Rvachev model for case of several age groups
 
@@ -31,31 +25,25 @@ class AgeGroupBRModel(Model):
         assert len(model_params.alpha) == self.alpha_dim
         assert len(model_params.beta) == self.beta_dim
         assert len(model_params.initial_infectious) == self.alpha_dim
-        assert (np.all(np.array(model_params.alpha) > 0) 
-            and np.all(np.array(model_params.alpha) < 1))
-        assert (np.all(np.array(model_params.beta) > 0) 
-            and np.all(np.array(model_params.beta) < 1))
+        assert np.all(np.array(model_params.alpha) > 0) and np.all(
+            np.array(model_params.alpha) < 1
+        )
+        assert np.all(np.array(model_params.beta) > 0) and np.all(
+            np.array(model_params.beta) < 1
+        )
 
         self.newly_infected = [
-            self.__simulate_one_group(
-                self, 
-                model_params, 
-                modeling_duration, 
-                group_num
-            )
+            self.__simulate_one_group(self, model_params, modeling_duration, group_num)
             for group_num in range(2)
         ]
 
-
     def __simulate_one_group(
-        self,
-        model_params: ModelParams,
-        modeling_duration: int,
-        group_num: int
+        self, model_params: ModelParams, modeling_duration: int, group_num: int
     ) -> list:
         # SETTING UP INITIAL CONDITIONS
-        initial_susceptible = int(model_params.alpha[group_num] 
-                                * model_params.population_size)
+        initial_susceptible = int(
+            model_params.alpha[group_num] * model_params.population_size
+        )
 
         total_infected = np.zeros(modeling_duration)
         newly_infected = np.zeros(modeling_duration)
@@ -78,8 +66,10 @@ class AgeGroupBRModel(Model):
 
             newly_infected[day + 1] = min(
                 sum(
-                    model_params.beta[2 * i + group_num] * susceptible[day] 
-                    * total_infected[day] / model_params.population_size
+                    model_params.beta[2 * i + group_num]
+                    * susceptible[day]
+                    * total_infected[day]
+                    / model_params.population_size
                     for i in range(2)
                 ),
                 susceptible[day],

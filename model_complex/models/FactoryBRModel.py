@@ -1,23 +1,14 @@
 from .Interface import Model
-
-from .Models import (
-    TotalBRModel,
-    AgeGroupBRModel
-    # StrainBRModel,
-    # PairwiseModel,
-    # SIRNetworkModel,
-    # SEIRNetworkModel,
-)
-
+from .Models import AgeGroupBRModel, TotalBRModel
 
 
 class FactoryBRModel:
     @classmethod
-    def total() -> Model:
+    def total(self) -> Model:
         return TotalBRModel()
 
     @classmethod
-    def age_group() -> Model:
+    def age_group(self) -> Model:
         return AgeGroupBRModel()
 
     # Arguments for models using networks passed for
