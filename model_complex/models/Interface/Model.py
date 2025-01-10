@@ -1,4 +1,4 @@
-class BRModel:
+class Model:
     """
     Interface for all BRModels
     """

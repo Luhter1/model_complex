@@ -2,6 +2,7 @@ import numpy as np
 import pymc as pm
 
 from ..Interface import BRModel
+from ...utils import ModelParams
 
 
 class AgeGroupBRModel(BRModel):
@@ -14,13 +15,11 @@ class AgeGroupBRModel(BRModel):
         self.beta_len = 4
 
     def simulate(
-        self,
-        alpha: list[float],
-        beta: list[float],
-        initial_infectious: list[int],
-        rho: int,
-        modeling_duration: int,
+        self, 
+        pars: ModelParams,
+        modeling_duration: int
     ):
+
         """
         Download epidemiological excel data file from the subdirectory of epid_data.
         epid_data directory looks like 'epid_data/{city}/epid_data.xlsx'.
@@ -33,15 +32,10 @@ class AgeGroupBRModel(BRModel):
 
         :return:
         """
-        # assert (
-        #     len(alpha) == self.beta_len
-        # ), f"Размерность alpha={self.alpha_len}, а получена {len(alpha)}"
-        # assert (
-        #     len(beta) == self.beta_len
-        # ), f"Размерность beta={self.beta_len}, а получена {len(beta)}"
-        # assert (
-        #     len(initial_infectious) == self.alpha_len
-        # ), f"Размерность initial_infectious={self.alpha_len}, а получена {len(initial_infectious)}"
+        alpha = pars.alpha
+        beta = pars.beta
+        initial_infectious = pars.initial_infectious
+        rho = pars.population_size
 
         self.newly_infected = []
 
