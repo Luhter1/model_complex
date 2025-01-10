@@ -9,10 +9,10 @@ class MCMC:
 
     @classmethod
     def calibrate(
-        self, 
-        rho: int, 
-        model: BRModel, 
-        init_infectious: list[int], 
+        self,
+        rho: int,
+        model: BRModel,
+        init_infectious: list[int],
         data: np.array,
         sample=100,
         epsilon=10000,
@@ -34,12 +34,8 @@ class MCMC:
         alpha_len, beta_len = model.params()
 
         simulate_pars = ModelParams(
-            alpha=[0],
-            beta=[0],
-            population_size=0,
-            initial_infectious=[0]
+            alpha=[0], beta=[0], population_size=0, initial_infectious=[0]
         )
-
 
         def simulation_func(rng, alpha, beta, rho, init_infectious, size=None):
             simulate_pars.alpha = alpha
@@ -94,27 +90,30 @@ class MCMC:
 
         posterior = idata.posterior.stack(samples=("draw", "chain"))
 
-        alpha = [
-            np.random.choice(posterior["alpha"][i], size=sample)
-            for i in range(alpha_len)
-        ]
-        beta = [
-            np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
-        ]
+        alpha = np.array(
+            [
+                np.random.choice(posterior["alpha"][i], size=sample)
+                for i in range(alpha_len)
+            ]
+        )
+        beta = np.array(
+            [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
+        )
 
-        # ci_pars = []
+        ci_pars = []
 
-        # for a, b in zip(alpha, beta):
-        #     ci_par = ModelParams(
-        #         alpha=a,
-        #         beta=b,
-        #         population_size=rho,
-        #         initial_infectious=init_infectious
-        #     )
+        for i in range(sample):
 
-        #     ci_pars.append( ci_par )
+            ci_par = ModelParams(
+                alpha=alpha[:, i],
+                beta=beta[:, i],
+                population_size=rho,
+                initial_infectious=init_infectious,
+            )
 
-        # model.set_ci_params(ci_pars)
+            ci_pars.append(ci_par)
+
+        model.set_ci_params(ci_pars)
 
         # запускаем, чтобю в модели были результаты с лучшими параметрами
         simulate_pars.alpha = [a.mean() for a in alpha]
