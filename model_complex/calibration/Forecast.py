@@ -51,7 +51,7 @@ class Forecast:
                 modeling_duration=data_size
             )
 
-            new_res = np.array(self.model.get_result())
+            new_res = list(self.model.get_daily_newly_infected().values())
 
             for i in range(len(self.init_infectious)):
                 res[i, :, 0] = np.minimum(res[i, :, 0], new_res[i])

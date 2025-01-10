@@ -6,6 +6,7 @@ from ...utils import ModelParams
 
 
 class TotalBRModel(BRModel):
+    GROUPS_NUMBER = 1
 
     def __init__(self):
         """

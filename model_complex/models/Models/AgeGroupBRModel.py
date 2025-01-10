@@ -6,7 +6,8 @@ from ...utils import ModelParams
 
 
 class AgeGroupBRModel(BRModel):
-
+    GROUPS_NUMBER = 2
+    
     def __init__(self):
         """
         Model for case of several age groups
