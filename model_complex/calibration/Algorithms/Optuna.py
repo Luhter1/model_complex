@@ -51,10 +51,7 @@ class Optuna:
         # запускаем, чтобы в модели были результаты с лучшими параметрами
         simulate_pars.alpha = alpha
         simulate_pars.beta = beta
-        
-        model.simulate(
-            pars=simulate_pars,
-            modeling_duration=len(data) // alpha_len,
-        )
+
+        model.set_best_params(simulate_pars)
         
         return alpha, beta

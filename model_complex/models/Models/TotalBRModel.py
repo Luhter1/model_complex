@@ -42,12 +42,14 @@ class TotalBRModel(BRModel):
 
         # SETTING UP INITIAL CONDITIONS
         initial_susceptible = int(alpha[0] * rho)
-        initial_infectious = initial_infectious
         total_infected = np.zeros(modeling_duration)
         newly_infected = np.zeros(modeling_duration)
         susceptible = np.zeros(modeling_duration)
-        total_infected[0] = initial_infectious[0]
-        newly_infected[0] = initial_infectious[0]
+        try:
+            total_infected[0] = initial_infectious[0]
+            newly_infected[0] = initial_infectious[0]
+        except:
+            print(initial_infectious)
         susceptible[0] = initial_susceptible
 
         # SIMULATION

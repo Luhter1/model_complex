@@ -26,7 +26,7 @@ class Forecast:
         self.duration = duration
 
 
-
+    # TODO: добавить усреднение
     def forecast(self):
         data_size = len(self.data)//len(self.init_infectious) + self.duration
 

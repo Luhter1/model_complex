@@ -230,7 +230,7 @@ class EpidData:
         self.__transform_data_for_regime(regime)
 
         return self.returned_df
-    
+
 
     def get_rho(self) -> int:
         """

@@ -102,15 +102,26 @@ class MCMC:
             np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)
         ]
 
+        # ci_pars = []
+
+        # for a, b in zip(alpha, beta):
+        #     ci_par = ModelParams(
+        #         alpha=a,
+        #         beta=b,
+        #         population_size=rho,
+        #         initial_infectious=init_infectious
+        #     )
+
+        #     ci_pars.append( ci_par )
+
+        # model.set_ci_params(ci_pars)
+
         # запускаем, чтобю в модели были результаты с лучшими параметрами
         simulate_pars.alpha = [a.mean() for a in alpha]
         simulate_pars.beta = [b.mean() for b in beta]
         simulate_pars.population_size = rho
         simulate_pars.initial_infectious = init_infectious
 
-        model.simulate(
-            pars=simulate_pars,
-            modeling_duration=len(data) // alpha_len,
-        )
+        model.set_best_params(simulate_pars)
 
         return alpha, beta

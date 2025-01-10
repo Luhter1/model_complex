@@ -9,7 +9,7 @@ class Model:
 
     is_ci_ready = False
     is_calibrated = False
-    best_calibration_params: ModelParams = None
+    calibration_params: ModelParams = None
     ci_params: list[ModelParams] = None
     newly_infected = None
 
@@ -51,10 +51,6 @@ class Model:
         return (self.alpha_dim, self.beta_dim)
 
 
-    def get_result(self):
-        return self.get_daily_newly_infected()
-
-
     def get_daily_newly_infected(self):
         data_arrays = np.array_split(
             self.newly_infected, 
@@ -62,3 +58,29 @@ class Model:
         )
 
         return {index: data_arrays[index] for index in range(self.GROUPS_NUMBER)}
+
+
+    def set_best_params(self, best_params: ModelParams):
+        self.calibration_params = best_params
+        self.is_calibrated = True
+
+
+    def set_ci_params(self, ci_params: list[ModelParams]):
+        self.ci_params = ci_params
+        self.is_ci_ready = True
+
+
+    def get_best_params(self) -> ModelParams:
+        if self.is_calibrated:
+            return self.calibration_params
+        else:
+            raise Exception('Model is not calibrated!')
+
+
+    def get_ci_params(self) -> list[ModelParams]:
+        if self.is_ci_ready:
+            return self.ci_params
+        else:
+            raise Exception(
+                'Model does not have set of parameters for CI construction!'
+            )
