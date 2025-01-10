@@ -11,8 +11,9 @@ class TotalBRModel(BRModel):
         """
         Model for total case
         """
-        self.alpha_len = 1
-        self.beta_len = 1
+        self.alpha_dim = 1
+        self.beta_dim = 1
+
 
     def simulate(
         self, 

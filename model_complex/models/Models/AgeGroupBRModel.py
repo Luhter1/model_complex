@@ -11,8 +11,9 @@ class AgeGroupBRModel(BRModel):
         """
         Model for case of several age groups
         """
-        self.alpha_len = 2
-        self.beta_len = 4
+        self.alpha_dim = 2
+        self.beta_dim = 4
+
 
     def simulate(
         self, 
