@@ -1,7 +1,7 @@
 import numpy as np
 import pymc as pm
 
-from ...models import BRModel
+from ...models import Model
 from ...utils import ModelParams
 
 
@@ -11,20 +11,24 @@ class ABC:
     def calibrate(
         self,
         rho: int,
-        model: BRModel,
+        model: Model,
         init_infectious: list[int],
         data: np.array,
+        # time_stamp: pd.DataFrame,
         sample: int = 100,
         epsilon: int = 3000,
-        with_rho: int = False,
     ):
         alpha_len, beta_len = model.params()
 
         simulate_pars = ModelParams(
-            alpha=[0], beta=[0], population_size=0, initial_infectious=init_infectious
+            alpha=[0],
+            beta=[0],
+            population_size=0,
+            initial_infectious=init_infectious,
+            # time_stamp=time_stamp
         )
 
-        def simulation_func(rng, alpha, beta, rho, size=None):
+        def simulation_func(rng, alpha, beta, size=None):
 
             simulate_pars.alpha = alpha
             simulate_pars.beta = beta
@@ -40,15 +44,11 @@ class ABC:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
 
-            if with_rho:
-                rho = pm.Uniform(name="rho", lower=with_rho[0], upper=with_rho[1])
-
             sim = pm.Simulator(
                 "sim",
                 simulation_func,
                 list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
-                rho,
                 epsilon=epsilon,
                 observed=data,
             )
@@ -76,6 +76,7 @@ class ABC:
                 beta=beta[:, i],
                 population_size=rho,
                 initial_infectious=init_infectious,
+                # time_stamp=time_stamp
             )
 
             ci_pars.append(ci_par)

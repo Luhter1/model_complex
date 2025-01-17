@@ -1,13 +1,12 @@
 import numpy as np
-import pymc as pm
 
-from ..Interface import BRModel
 from ...utils import ModelParams
+from ..Interface import Model
 
 
-class AgeGroupBRModel(BRModel):
+class AgeGroupBRModel(Model):
     GROUPS_NUMBER = 2
-    
+
     def __init__(self):
         """
         Model for case of several age groups
@@ -15,13 +14,7 @@ class AgeGroupBRModel(BRModel):
         self.alpha_dim = 2
         self.beta_dim = 4
 
-
-    def simulate(
-        self, 
-        pars: ModelParams,
-        modeling_duration: int
-    ):
-
+    def simulate(self, pars: ModelParams, modeling_duration: int):
         """
         Download epidemiological excel data file from the subdirectory of epid_data.
         epid_data directory looks like 'epid_data/{city}/epid_data.xlsx'.
@@ -41,16 +34,15 @@ class AgeGroupBRModel(BRModel):
 
         self.newly_infected = []
 
-        for j in range(2):
+        for j in range(self.GROUPS_NUMBER):
             # SETTING UP INITIAL CONDITIONS
+            initial_susceptible = int(alpha[j] * rho)
             total_infected = np.zeros(modeling_duration)
             newly_infected = np.zeros(modeling_duration)
             susceptible = np.zeros(modeling_duration)
 
             total_infected[0] = initial_infectious[j]
             newly_infected[0] = initial_infectious[j]
-
-            initial_susceptible = int(alpha[j] * rho)
             susceptible[0] = initial_susceptible
 
             # SIMULATION
@@ -67,7 +59,7 @@ class AgeGroupBRModel(BRModel):
                 newly_infected[day + 1] = min(
                     sum(
                         beta[2 * i + j] * susceptible[day] * total_infected[day] / rho
-                        for i in range(2)
+                        for i in range(self.GROUPS_NUMBER)
                     ),
                     susceptible[day],
                 )

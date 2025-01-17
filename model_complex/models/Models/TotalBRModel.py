@@ -1,11 +1,10 @@
 import numpy as np
-import pymc as pm
 
-from ..Interface import BRModel
 from ...utils import ModelParams
+from ..Interface import Model
 
 
-class TotalBRModel(BRModel):
+class TotalBRModel(Model):
     GROUPS_NUMBER = 1
 
     def __init__(self):
@@ -15,12 +14,7 @@ class TotalBRModel(BRModel):
         self.alpha_dim = 1
         self.beta_dim = 1
 
-
-    def simulate(
-        self, 
-        pars: ModelParams,
-        modeling_duration: int
-    ):
+    def simulate(self, pars: ModelParams, modeling_duration: int):
         """
         Download epidemiological excel data file from the subdirectory of epid_data.
         epid_data directory looks like 'epid_data/{city}/epid_data.xlsx'.
@@ -39,17 +33,14 @@ class TotalBRModel(BRModel):
         initial_infectious = pars.initial_infectious
         rho = pars.population_size
 
-
         # SETTING UP INITIAL CONDITIONS
         initial_susceptible = int(alpha[0] * rho)
         total_infected = np.zeros(modeling_duration)
         newly_infected = np.zeros(modeling_duration)
         susceptible = np.zeros(modeling_duration)
-        try:
-            total_infected[0] = initial_infectious[0]
-            newly_infected[0] = initial_infectious[0]
-        except:
-            print(initial_infectious)
+
+        total_infected[0] = initial_infectious[0]
+        newly_infected[0] = initial_infectious[0]
         susceptible[0] = initial_susceptible
 
         # SIMULATION

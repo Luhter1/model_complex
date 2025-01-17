@@ -1,3 +1,3 @@
-from .Model import Model as BRModel
+from .Model import Model
 
-__all__ = ["BRModel"]
+__all__ = ["Model"]

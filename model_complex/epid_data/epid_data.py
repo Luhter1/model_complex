@@ -52,9 +52,7 @@ class EpidData:
     REGIME_AGE = "age"
     REGIME_STRAIN = "strain"
 
-
-    def __init__(self, city: str, path: str, 
-                 start_time: str, end_time: str) -> None:
+    def __init__(self, city: str, path: str, start_time: str, end_time: str) -> None:
         """
         EpidData class
 
@@ -91,7 +89,6 @@ class EpidData:
 
         self.__read_all_data()
 
-    
     def __read_all_data(self) -> None:
         """
         Download all data from folder
@@ -103,9 +100,7 @@ class EpidData:
         )
 
         # read pcr.xlsx file
-        self.pcr_df = self.__data_to_dataframe(
-            "pcr.xlsx", pcr_table_from_excel_to_python
-        )
+        self.pcr_df = self.__data_to_dataframe("pcr.xlsx", pcr_table_from_excel_to_python)
 
         for strain_index in range(self.strains_number):
             str_ind = str(strain_index)
@@ -115,7 +110,6 @@ class EpidData:
             self.cases_df["real_cases_strain_" + str_ind] = (
                 self.cases_df["rel_strain_" + str_ind] * self.cases_df["sars_total_cases"]
             ).round()
-
 
     def __data_to_dataframe(self, file: str, table: dict[str, str]) -> pd.DataFrame:
         """
@@ -135,8 +129,6 @@ class EpidData:
         df["datetime"] = df["date"].apply(date_extract)
 
         return df.fillna(float("nan"))
-    
-
 
     def __get_time_period(self) -> None:
         """
@@ -147,7 +139,6 @@ class EpidData:
             (self.cases_df["datetime"] > self.start_time)
             & (self.cases_df["datetime"] < self.end_time)
         ]
-
 
     def __transform_data_for_regime(self, regime: str) -> None:
         """
@@ -162,7 +153,6 @@ class EpidData:
         self.returned_df["total_cases"] = self.returned_df.fillna(0)[
             ["real_cases_strain_1", "real_cases_strain_2", "real_cases_strain_3"]
         ].sum(axis=1)
-
 
         if regime == self.REGIME_TOTAL:
             self.returned_df = self.returned_df[
@@ -215,8 +205,6 @@ class EpidData:
                 ]
             ]
 
-
-
     def get_wave_data(self, regime: str) -> pd.DataFrame:
         """
         Obtaining data for the epidemiological wave
@@ -231,14 +219,12 @@ class EpidData:
 
         return self.returned_df
 
-
     def get_rho(self) -> int:
         """
         Get number of people in population
         :return: Number of people
         """
         return self.returned_df["total_population"].iloc[0]
-
 
     def prepare_for_plot(self) -> np.array:
         """
@@ -247,10 +233,11 @@ class EpidData:
         """
         return np.array(self.returned_df.drop(columns=["datetime", "total_population"]))
 
-
-    def prepare_for_calibration(self) -> np.array:
+    def get_data(self) -> np.array:
         """
         Obtaining data for calibration
         :return: Data for calibration
         """
-        return self.prepare_for_plot().T.flatten()
+        return self.returned_df.drop(
+            columns=["total_population"]
+        )  # self.prepare_for_plot().T.flatten()

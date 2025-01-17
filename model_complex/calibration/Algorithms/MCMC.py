@@ -1,7 +1,7 @@
 import numpy as np
 import pymc as pm
 
-from ...models import BRModel
+from ...models import Model
 from ...utils import ModelParams
 
 
@@ -11,9 +11,10 @@ class MCMC:
     def calibrate(
         self,
         rho: int,
-        model: BRModel,
+        model: Model,
         init_infectious: list[int],
         data: np.array,
+        # time_stamp: pd.DataFrame,
         sample=100,
         epsilon=10000,
         with_rho=False,  # [50_000, 500_000] - если True
@@ -34,7 +35,10 @@ class MCMC:
         alpha_len, beta_len = model.params()
 
         simulate_pars = ModelParams(
-            alpha=[0], beta=[0], population_size=0, initial_infectious=[0]
+            alpha=[0],
+            beta=[0],
+            population_size=0,
+            initial_infectious=[0],  # time_stamp=time_stamp
         )
 
         def simulation_func(rng, alpha, beta, rho, init_infectious, size=None):
@@ -109,6 +113,7 @@ class MCMC:
                 beta=beta[:, i],
                 population_size=rho,
                 initial_infectious=init_infectious,
+                # time_stamp=time_stamp
             )
 
             ci_pars.append(ci_par)
