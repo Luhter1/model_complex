@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import numpy as np
 
 from ..models import Model
@@ -6,57 +8,50 @@ from ..utils import ModelParams
 
 class Forecast:
 
-    # TODO:     @classmethod
-    def __init__(
+    @classmethod
+    def forecast(
         self,
-        data: list,
         model: Model,
-        init_infectious: list[int],
-        alpha: list[int],
-        beta: list[int],
-        rho: int,
-        duration: int,
-    ) -> None:
+        calibration_duration: int,
+        duration: timedelta,
+    ):
 
-        self.model = model
-        self.init_infectious = init_infectious
-        self.alpha = alpha
-        self.beta = beta
-        self.rho = rho
-        self.duration = duration
-        self.time_stamp = data["datetime"]
-        self.data = data.drop(columns=["datetime"]).to_numpy().T.flatten()
+        ci_pars = model.get_ci_params()
+        # округляем вверх кол-во недель, чтобы не выравнивать numpy матрицу
+        duration = calibration_duration + (duration.days+6)//7 * 7 
 
-    # TODO: добавить усреднение
-    def forecast(self):
-        data_size = len(self.data) // len(self.init_infectious) + self.duration
+        group_num = len(ci_pars[0].initial_infectious)
 
-        res = np.array(
+        min_mean_max = np.array(
             [
-                [[float("inf"), float("-inf")] for _ in range(data_size)]
-                for j in range(len(self.init_infectious))
+                [[float("inf"), 0, float("-inf")] for _ in range(duration//7)]
+                for j in range(group_num)
             ]
         )
 
-        simulate_pars = ModelParams(
-            alpha=[0],
-            beta=[0],
-            population_size=self.rho,
-            initial_infectious=self.init_infectious,
-            # time_stamp=self.time_stamp
+
+        for pars in ci_pars:
+
+            model.simulate(
+                pars=pars, 
+                modeling_duration=duration
+            )
+
+            new_result = model.get_weekly_newly_infected_by_group()
+
+            for i in range(group_num):
+                min_mean_max[i, :, 0] = np.minimum(min_mean_max[i, :, 0], new_result[i])
+                min_mean_max[i, :, 2] = np.maximum(min_mean_max[i, :, 2], new_result[i])
+
+        model.simulate(
+            pars=model.get_best_params(), 
+            modeling_duration=duration
         )
 
-        for a, b in zip(zip(*self.alpha), zip(*self.beta)):
+        new_result = model.get_weekly_newly_infected_by_group()
 
-            simulate_pars.alpha = a
-            simulate_pars.beta = b
+        for i in range(group_num):
+            min_mean_max[i, :, 1] = new_result[i]
 
-            self.model.simulate(pars=simulate_pars, modeling_duration=data_size)
 
-            new_res = list(self.model.get_daily_newly_infected().values())
-
-            for i in range(len(self.init_infectious)):
-                res[i, :, 0] = np.minimum(res[i, :, 0], new_res[i])
-                res[i, :, 1] = np.maximum(res[i, :, 1], new_res[i])
-
-        return res
+        return min_mean_max

@@ -15,18 +15,17 @@ class Optuna:
         model: Model,
         init_infectious: list[int],
         data: np.array,
-        # time_stamp: pd.DataFrame,
         n_trials=1000,
     ):
 
         alpha_len, beta_len = model.params()
+        duration = (len(data) // alpha_len) * 7
 
         simulate_pars = ModelParams(
             alpha=[0],
             beta=[0],
             population_size=rho,
             initial_infectious=init_infectious,
-            # time_stamp=time_stamp
         )
 
         def OptunaModel(trial):
@@ -39,22 +38,16 @@ class Optuna:
 
             model.simulate(
                 pars=simulate_pars,
-                modeling_duration=len(data) // alpha_len,
+                modeling_duration=duration,
             )
 
-            return r2_score(data, model.newly_infected)
+            return r2_score(data, model.get_weekly_newly_infected())
 
         study = optuna.create_study(direction="maximize")
         study.optimize(OptunaModel, n_trials=n_trials)
 
-        alpha = [study.best_params[f"alpha_{i}"] for i in range(alpha_len)]
-        beta = [study.best_params[f"beta_{i}"] for i in range(beta_len)]
-
-        # запускаем, чтобы в модели были результаты с лучшими параметрами
-        simulate_pars.alpha = alpha
-        simulate_pars.beta = beta
+        simulate_pars.alpha = [study.best_params[f"alpha_{i}"] for i in range(alpha_len)]
+        simulate_pars.beta = [study.best_params[f"beta_{i}"] for i in range(beta_len)]
 
         model.set_ci_params([])
         model.set_best_params(simulate_pars)
-
-        return alpha, beta

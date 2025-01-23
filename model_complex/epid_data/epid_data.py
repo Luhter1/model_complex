@@ -241,3 +241,7 @@ class EpidData:
         return self.returned_df.drop(
             columns=["total_population"]
         )  # self.prepare_for_plot().T.flatten()
+    
+    def get_duration(self) -> int:
+
+        return len(self.returned_df)*7

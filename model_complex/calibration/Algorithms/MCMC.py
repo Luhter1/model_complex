@@ -14,11 +14,8 @@ class MCMC:
         model: Model,
         init_infectious: list[int],
         data: np.array,
-        # time_stamp: pd.DataFrame,
         sample=100,
         epsilon=10000,
-        with_rho=False,  # [50_000, 500_000] - если True
-        with_initi=False,  # [1, 1_000] - если True
         tune=2500,
         draws=500,
         chains=4,
@@ -33,48 +30,35 @@ class MCMC:
         """
 
         alpha_len, beta_len = model.params()
+        duration = (len(data) // alpha_len) * 7
 
         simulate_pars = ModelParams(
             alpha=[0],
             beta=[0],
-            population_size=0,
-            initial_infectious=[0],  # time_stamp=time_stamp
+            population_size=rho,
+            initial_infectious=init_infectious
         )
 
-        def simulation_func(rng, alpha, beta, rho, init_infectious, size=None):
+        def simulation_func(rng, alpha, beta, size=None):
             simulate_pars.alpha = alpha
             simulate_pars.beta = beta
-            simulate_pars.population_size = rho
-            simulate_pars.initial_infectious = init_infectious
+
 
             model.simulate(
                 pars=simulate_pars,
-                modeling_duration=len(data) // alpha_len,
+                modeling_duration=duration
             )
-            return model.newly_infected
+            return model.get_weekly_newly_infected()
 
         with pm.Model() as pm_model:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
             beta = pm.Uniform(name="beta", lower=0, upper=1, shape=(beta_len,))
-
-            if with_rho:
-                rho = pm.Uniform(name="rho", lower=with_rho[0], upper=with_rho[1])
-
-            if with_initi:
-                init_infectious = pm.Uniform(
-                    name="init_infectious",
-                    lower=with_initi[0],
-                    upper=with_initi[1],
-                    shape=(alpha_len,),
-                )
 
             sim = pm.Simulator(
                 "sim",
                 simulation_func,
                 list(alpha) + [0] * (beta_len - alpha_len),
                 beta,
-                rho,
-                list(init_infectious) + [0] * (beta_len - len(init_infectious)),
                 epsilon=epsilon,
                 observed=data,
             )
@@ -101,7 +85,10 @@ class MCMC:
             ]
         )
         beta = np.array(
-            [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
+            [
+                np.random.choice(posterior["beta"][i], size=sample) 
+                for i in range(beta_len)
+            ]
         )
 
         ci_pars = []
@@ -113,19 +100,13 @@ class MCMC:
                 beta=beta[:, i],
                 population_size=rho,
                 initial_infectious=init_infectious,
-                # time_stamp=time_stamp
             )
 
             ci_pars.append(ci_par)
 
         model.set_ci_params(ci_pars)
 
-        # запускаем, чтобю в модели были результаты с лучшими параметрами
         simulate_pars.alpha = [a.mean() for a in alpha]
         simulate_pars.beta = [b.mean() for b in beta]
-        simulate_pars.population_size = rho
-        simulate_pars.initial_infectious = init_infectious
 
         model.set_best_params(simulate_pars)
-
-        return alpha, beta

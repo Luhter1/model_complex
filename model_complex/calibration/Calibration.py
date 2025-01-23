@@ -33,59 +33,45 @@ class Calibration:
 
     def abc_calibration(self, sample=100, epsilon=3000):
 
-        return ABC.calibrate(
+        ABC.calibrate(
             rho=self.rho,
             model=self.model,
             init_infectious=self.init_infectious,
             data=self.data,
-            # time_stamp=self.time_stamp,
             sample=sample,
             epsilon=epsilon,
         )
 
     def optuna_calibration(self, n_trials=1000):
 
-        return Optuna.calibrate(
+        Optuna.calibrate(
             rho=self.rho,
             model=self.model,
             init_infectious=self.init_infectious,
             data=self.data,
-            # time_stamp=self.time_stamp,
             n_trials=n_trials,
         )
 
     def annealing_calibration(self):
 
-        return Annealing.calibrate(
+        Annealing.calibrate(
             rho=self.rho,
             model=self.model,
             init_infectious=self.init_infectious,
             data=self.data,
-            # time_stamp=self.time_stamp,
         )
 
     def mcmc_calibration(
         self,
         sample=100,
         epsilon=10000,
-        with_rho=False,  # [50_000, 500_000] - если True
-        with_initi=False,  # [1, 1_000] - если True
-        tune=2500,
-        draws=500,
-        chains=4,
     ):
 
-        return MCMC.calibrate(
+        MCMC.calibrate(
             rho=self.rho,
             model=self.model,
             init_infectious=self.init_infectious,
             data=self.data,
-            # time_stamp=self.time_stamp,
             sample=sample,
             epsilon=epsilon,
-            with_rho=with_rho,  # [50_000, 500_000] - если True
-            with_initi=with_initi,  # [1, 1_000] - если True
-            tune=tune,
-            draws=draws,
-            chains=chains,
         )

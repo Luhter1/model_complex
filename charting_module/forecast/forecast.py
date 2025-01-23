@@ -1,0 +1,83 @@
+from model_complex import Forecast, FactoryBRModel, EpidData, Calibration
+from datetime import datetime
+import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
+
+
+def forecast_plot(st_time, end_time, forecast_duration, path, city, method, type, save_path='./', epsilon=3000):
+
+    epid_data = EpidData(city=city, path=path, 
+                    start_time=st_time, end_time=end_time)
+
+    epid_data.get_wave_data(regime=type)
+    data = epid_data.get_data()
+    rho = epid_data.get_rho()//10
+    dur = epid_data.get_duration()
+    plot_data = epid_data.prepare_for_plot()
+
+
+    if type == 'age':
+        init_infect = [100, 100]
+        model = FactoryBRModel.age_group()
+        label = {0: '0-14 years', 1: '15+ years'}
+
+    else:
+        init_infect = [100]
+        model = FactoryBRModel.total()
+        label = {0: 'total'}
+    color = {0: 'blue', 1: 'orange'}
+
+
+
+    calibration = Calibration(init_infect, model, data, rho)
+
+    if method == 'abc':
+        calibration.abc_calibration(epsilon=epsilon)
+    else:
+        calibration.mcmc_calibration(epsilon=epsilon)
+
+
+    end_date = datetime.strptime(end_time, '%d-%m-%Y') + forecast_duration
+    end_prog = end_date.strftime('%d-%m-%Y')
+
+
+    forecast_epid_data = EpidData(city=city, path=path, 
+                    start_time=st_time, end_time=end_prog)
+    forecast_epid_data.get_wave_data(regime=type)
+    forecast_plot_data = forecast_epid_data.prepare_for_plot()
+
+
+    forecast_result = Forecast.forecast(model, dur, forecast_duration)
+
+    model.simulate(
+        pars=model.get_best_params(),
+        modeling_duration=dur
+    )
+
+    result = model.get_weekly_newly_infected_by_group()
+
+    for i in range(len(result)):
+        plt.plot(forecast_result[i, :, 1], color=color[i], alpha=0.3)
+        plt.plot(
+            result[i], 
+            label=f'{label[i]}, $R^2_{i}$: {round(r2_score(plot_data[:, i], result[i]),2)}', 
+            color=color[i]
+        )
+        plt.plot(forecast_plot_data[:,i], '--o', color=color[i], alpha=0.5)
+        plt.plot(plot_data[:, i], '--o', color=color[i])
+        plt.fill_between(
+            [j for j in range(len(forecast_result[0, :, 0]))],
+            forecast_result[i, :, 0],
+            forecast_result[i, :, 2],
+            color=color[i],
+            alpha=0.1
+        )
+        plt.plot(forecast_result[i, :, 0], color=color[i])
+        plt.plot(forecast_result[i, :, 2], color=color[i])
+
+    plt.title(f"{method.upper()}, {type.capitalize()}")
+    plt.legend()
+
+    plt.savefig(save_path + f'F_{city}_{method}_{type}_{st_time}_{end_time}.png', dpi=600)
+    plt.savefig(save_path + f'F_{city}_{method}_{type}_{st_time}_{end_time}.pdf', dpi=600)
+

@@ -14,31 +14,29 @@ class ABC:
         model: Model,
         init_infectious: list[int],
         data: np.array,
-        # time_stamp: pd.DataFrame,
         sample: int = 100,
         epsilon: int = 3000,
     ):
         alpha_len, beta_len = model.params()
+        duration = (len(data) // alpha_len) * 7
 
         simulate_pars = ModelParams(
             alpha=[0],
             beta=[0],
-            population_size=0,
+            population_size=rho,
             initial_infectious=init_infectious,
-            # time_stamp=time_stamp
         )
 
         def simulation_func(rng, alpha, beta, size=None):
 
             simulate_pars.alpha = alpha
             simulate_pars.beta = beta
-            simulate_pars.population_size = rho
 
             model.simulate(
                 pars=simulate_pars,
-                modeling_duration=len(data) // alpha_len,
+                modeling_duration=duration
             )
-            return model.newly_infected
+            return model.get_weekly_newly_infected()
 
         with pm.Model() as PMmodel:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
@@ -64,7 +62,10 @@ class ABC:
             ]
         )
         beta = np.array(
-            [np.random.choice(posterior["beta"][i], size=sample) for i in range(beta_len)]
+            [
+                np.random.choice(posterior["beta"][i], size=sample) 
+                for i in range(beta_len)
+            ]
         )
 
         ci_pars = []
@@ -76,7 +77,6 @@ class ABC:
                 beta=beta[:, i],
                 population_size=rho,
                 initial_infectious=init_infectious,
-                # time_stamp=time_stamp
             )
 
             ci_pars.append(ci_par)
@@ -85,8 +85,5 @@ class ABC:
 
         simulate_pars.alpha = [a.mean() for a in alpha]
         simulate_pars.beta = [b.mean() for b in beta]
-        simulate_pars.population_size = rho
 
         model.set_best_params(simulate_pars)
-
-        return alpha, beta
