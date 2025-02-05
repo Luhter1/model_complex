@@ -13,6 +13,7 @@ pymc = "^5.18.2"
 scikit-learn = "^1.5.2"
 openpyxl = "^3.1.5"
 seaborn = "^0.13.2"
+pre-commit = "^4.1.0"
 
 
 [tool.poetry.group.dev.dependencies]

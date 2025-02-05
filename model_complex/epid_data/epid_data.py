@@ -205,6 +205,12 @@ class EpidData:
                 ]
             ]
 
+    def __set_timedelta(self):
+        deltatime = self.returned_df["datetime"]
+        deltadays = (deltatime.iloc[1] - deltatime.iloc[0]).days
+
+        self.returned_df.attrs = {"discretisation": "week" if deltadays==7 else "day"}
+
     def get_wave_data(self, regime: str) -> pd.DataFrame:
         """
         Obtaining data for the epidemiological wave
@@ -216,6 +222,7 @@ class EpidData:
         self.__get_time_period()
         assert isinstance(self.returned_df, pd.DataFrame)
         self.__transform_data_for_regime(regime)
+        self.__set_timedelta()
 
         return self.returned_df
 
@@ -240,8 +247,7 @@ class EpidData:
         """
         return self.returned_df.drop(
             columns=["total_population"]
-        )  # self.prepare_for_plot().T.flatten()
+        )
     
     def get_duration(self) -> int:
-
-        return len(self.returned_df)*7
+        return len(self.returned_df)*7 if self.returned_df.attrs["discretisation"] == "week" else len(self.returned_df)

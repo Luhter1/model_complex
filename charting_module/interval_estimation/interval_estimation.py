@@ -1,7 +1,8 @@
 from model_complex import (
     Calibration, 
     EpidData, 
-    FactoryBRModel
+    FactoryBRModel,
+    ModelParams
 )
 from sklearn.metrics import r2_score
 import numpy as np
@@ -15,25 +16,27 @@ def interval_estimation_plot(st_time, end_time, path, city, method, type, save_p
     
     epid_data.get_wave_data(regime=type)
     data = epid_data.get_data()
-    rho = epid_data.get_rho()//10
+    model_pars = ModelParams(
+        alpha= [0],
+        beta= [0],
+        population_size= epid_data.get_rho()//10,
+        initial_infectious= [100]
+    )
 
 
 
     if type == 'age':
-        init_infect = [100, 100]
+        model_pars.initial_infectious= [100, 100]
         model = FactoryBRModel.age_group()
         label_alpha = {0: '0-14 years', 1: '15+ years'}
+
     else:
-        init_infect = [100]
         model = FactoryBRModel.total()
         label_alpha = {0: 'total'}
 
 
-    color = {0: 'blue', 1: 'orange'}
-
-
-    calibration = Calibration(init_infect, model, data, rho)
-
+    calibration = Calibration(model, data, model_pars)
+    
     if method == 'abc':
         calibration.abc_calibration(epsilon=epsilon)
     else:

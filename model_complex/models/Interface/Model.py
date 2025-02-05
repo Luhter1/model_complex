@@ -12,7 +12,8 @@ class Model:
     is_calibrated = False
     calibration_params: ModelParams = None
     ci_params: list[ModelParams] = None
-    newly_infected = None
+    newly_infected: list = None
+    prevalence: list = None
 
     def __init__(self):
         """
@@ -44,9 +45,10 @@ class Model:
         return (self.alpha_dim, self.beta_dim)
 
     def get_daily_newly_infected(self):
-        data_arrays = np.array_split(self.newly_infected, self.GROUPS_NUMBER)
+        return self.newly_infected
 
-        return {index: data_arrays[index] for index in range(self.GROUPS_NUMBER)}
+    def get_daily_newly_infected_by_group(self):
+        return np.array_split(self.newly_infected, self.GROUPS_NUMBER)
 
 
     def get_weekly_newly_infected(self):
@@ -54,6 +56,37 @@ class Model:
     
     def get_weekly_newly_infected_by_group(self):
         return self.get_weekly_newly_infected().reshape(self.alpha_dim, -1)
+    
+
+
+    def get_daily_prevalence(self):
+        return self.prevalence
+
+    def get_daily_prevalence_by_group(self):
+        return np.array_split(self.prevalence, self.GROUPS_NUMBER)
+
+
+    def get_weekly_prevalence(self):
+        return np.array(self.prevalence).reshape(-1, 7).sum(axis=1)
+    
+    def get_weekly_prevalence_by_group(self):
+        return self.get_weekly_prevalence().reshape(self.alpha_dim, -1)
+
+
+
+    def get_daily_recovered(self):
+        return self.recovered
+
+    def get_daily_recovered_by_group(self):
+        return np.array_split(self.recovered, self.GROUPS_NUMBER)
+
+
+    def get_weekly_recovered(self):
+        return np.array(self.recovered).reshape(-1, 7).sum(axis=1)
+    
+    def get_weekly_recovered_by_group(self):
+        return self.get_weekly_recovered().reshape(self.alpha_dim, -1)
+    
 
     def set_best_params(self, best_params: ModelParams):
         self.calibration_params = best_params

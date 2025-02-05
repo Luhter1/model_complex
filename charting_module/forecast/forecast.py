@@ -1,4 +1,10 @@
-from model_complex import Forecast, FactoryBRModel, EpidData, Calibration
+from model_complex import (
+    Forecast, 
+    FactoryBRModel, 
+    EpidData, 
+    Calibration, 
+    ModelParams
+)
 from datetime import datetime
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
@@ -11,25 +17,32 @@ def forecast_plot(st_time, end_time, forecast_duration, path, city, method, type
 
     epid_data.get_wave_data(regime=type)
     data = epid_data.get_data()
-    rho = epid_data.get_rho()//10
     dur = epid_data.get_duration()
     plot_data = epid_data.prepare_for_plot()
-
+    model_pars = ModelParams(
+        alpha= [0],
+        beta= [0],
+        population_size= epid_data.get_rho()//10,
+        initial_infectious= [100]
+    )
 
     if type == 'age':
-        init_infect = [100, 100]
+        model_pars.initial_infectious= [100, 100]
         model = FactoryBRModel.age_group()
         label = {0: '0-14 years', 1: '15+ years'}
 
     else:
-        init_infect = [100]
         model = FactoryBRModel.total()
         label = {0: 'total'}
     color = {0: 'blue', 1: 'orange'}
 
+    if data.attrs['discretisation'] == "week":
+        func_to_get_newly_data = model.get_weekly_newly_infected_by_group
+    else:
+        func_to_get_newly_data = model.get_daily_newly_infected_by_group
 
 
-    calibration = Calibration(init_infect, model, data, rho)
+    calibration = Calibration(model, data, model_pars)
 
     if method == 'abc':
         calibration.abc_calibration(epsilon=epsilon)
@@ -47,14 +60,14 @@ def forecast_plot(st_time, end_time, forecast_duration, path, city, method, type
     forecast_plot_data = forecast_epid_data.prepare_for_plot()
 
 
-    forecast_result = Forecast.forecast(model, dur, forecast_duration)
+    forecast_result = Forecast.forecast(model, data, forecast_duration)
 
     model.simulate(
         pars=model.get_best_params(),
         modeling_duration=dur
     )
 
-    result = model.get_weekly_newly_infected_by_group()
+    result = func_to_get_newly_data()
 
     for i in range(len(result)):
         plt.plot(forecast_result[i, :, 1], color=color[i], alpha=0.3)
@@ -80,4 +93,5 @@ def forecast_plot(st_time, end_time, forecast_duration, path, city, method, type
 
     plt.savefig(save_path + f'F_{city}_{method}_{type}_{st_time}_{end_time}.png', dpi=600)
     plt.savefig(save_path + f'F_{city}_{method}_{type}_{st_time}_{end_time}.pdf', dpi=600)
+    plt.clf()
 

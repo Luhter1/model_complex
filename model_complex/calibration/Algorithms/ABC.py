@@ -10,21 +10,26 @@ class ABC:
     @classmethod
     def calibrate(
         self,
-        rho: int,
         model: Model,
-        init_infectious: list[int],
         data: np.array,
+        discretisation: str,
+        model_pars: ModelParams,
         sample: int = 100,
         epsilon: int = 3000,
     ):
         alpha_len, beta_len = model.params()
-        duration = (len(data) // alpha_len) * 7
+        duration = (len(data) // alpha_len)
+        get_newly_infected_base_on_discretisation = model.get_daily_newly_infected
+        
+        if discretisation == "week":
+            duration *= 7
+            get_newly_infected_base_on_discretisation = model.get_weekly_newly_infected
 
         simulate_pars = ModelParams(
             alpha=[0],
             beta=[0],
-            population_size=rho,
-            initial_infectious=init_infectious,
+            population_size=model_pars.population_size,
+            initial_infectious=model_pars.initial_infectious,
         )
 
         def simulation_func(rng, alpha, beta, size=None):
@@ -36,7 +41,7 @@ class ABC:
                 pars=simulate_pars,
                 modeling_duration=duration
             )
-            return model.get_weekly_newly_infected()
+            return get_newly_infected_base_on_discretisation()
 
         with pm.Model() as PMmodel:
             alpha = pm.Uniform(name="alpha", lower=0, upper=1, shape=(alpha_len,))
@@ -75,8 +80,8 @@ class ABC:
             ci_par = ModelParams(
                 alpha=alpha[:, i],
                 beta=beta[:, i],
-                population_size=rho,
-                initial_infectious=init_infectious,
+                population_size=model_pars.population_size,
+                initial_infectious=model_pars.initial_infectious
             )
 
             ci_pars.append(ci_par)

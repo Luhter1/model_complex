@@ -1,6 +1,7 @@
 import optuna
 
 from ..models import Model
+from ..utils import ModelParams
 from .Algorithms import ABC, MCMC, Annealing, Optuna
 
 optuna.logging.set_verbosity(optuna.logging.ERROR)
@@ -10,10 +11,9 @@ class Calibration:
 
     def __init__(
         self,
-        init_infectious: list[int],
         model: Model,
         data: list,
-        rho: int,
+        model_pars: ModelParams,
     ) -> None:
         """
         Calibration class
@@ -25,19 +25,18 @@ class Calibration:
         :param data: Observed data for calibrating process
         :param rho: People's population
         """
-        self.rho = rho
         self.model = model
-        self.init_infectious = init_infectious
-        self.time_stamp = data["datetime"]
+        self.model_pars = model_pars
+        self.discretisation = data.attrs['discretisation']
         self.data = data.drop(columns=["datetime"]).to_numpy().T.flatten()
 
     def abc_calibration(self, sample=100, epsilon=3000):
 
         ABC.calibrate(
-            rho=self.rho,
             model=self.model,
-            init_infectious=self.init_infectious,
             data=self.data,
+            discretisation=self.discretisation,
+            model_pars = self.model_pars,
             sample=sample,
             epsilon=epsilon,
         )
@@ -45,20 +44,20 @@ class Calibration:
     def optuna_calibration(self, n_trials=1000):
 
         Optuna.calibrate(
-            rho=self.rho,
             model=self.model,
-            init_infectious=self.init_infectious,
             data=self.data,
+            discretisation=self.discretisation,
+            model_pars = self.model_pars,
             n_trials=n_trials,
         )
 
     def annealing_calibration(self):
 
         Annealing.calibrate(
-            rho=self.rho,
             model=self.model,
-            init_infectious=self.init_infectious,
             data=self.data,
+            discretisation=self.discretisation,
+            model_pars = self.model_pars,
         )
 
     def mcmc_calibration(
@@ -68,10 +67,10 @@ class Calibration:
     ):
 
         MCMC.calibrate(
-            rho=self.rho,
             model=self.model,
-            init_infectious=self.init_infectious,
             data=self.data,
+            discretisation=self.discretisation,
+            model_pars = self.model_pars,
             sample=sample,
             epsilon=epsilon,
         )

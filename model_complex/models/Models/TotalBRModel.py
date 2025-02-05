@@ -38,10 +38,12 @@ class TotalBRModel(Model):
         total_infected = np.zeros(modeling_duration)
         newly_infected = np.zeros(modeling_duration)
         susceptible = np.zeros(modeling_duration)
+        recovered = np.zeros(modeling_duration)
 
         total_infected[0] = initial_infectious[0]
         newly_infected[0] = initial_infectious[0]
         susceptible[0] = initial_susceptible
+        recovered[0] = 0
 
         # SIMULATION
         for day in range(modeling_duration - 1):
@@ -56,9 +58,13 @@ class TotalBRModel(Model):
                 rho,
             )
 
+            recovered[day] = initial_susceptible - susceptible[day] - total_infected[day]
+
             newly_infected[day + 1] = min(
                 beta[0] * susceptible[day] * total_infected[day] / rho, susceptible[day]
             )
             susceptible[day + 1] = susceptible[day] - newly_infected[day + 1]
-
+        self.susceptible = susceptible
         self.newly_infected = newly_infected
+        self.prevalence = total_infected
+        self.recovered = recovered

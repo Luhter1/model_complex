@@ -33,6 +33,8 @@ class AgeGroupBRModel(Model):
         rho = pars.population_size
 
         self.newly_infected = []
+        self.prevalence = []
+        self.recovered = []
 
         for j in range(self.GROUPS_NUMBER):
             # SETTING UP INITIAL CONDITIONS
@@ -40,11 +42,13 @@ class AgeGroupBRModel(Model):
             total_infected = np.zeros(modeling_duration)
             newly_infected = np.zeros(modeling_duration)
             susceptible = np.zeros(modeling_duration)
+            recovered = np.zeros(modeling_duration)
 
             total_infected[0] = initial_infectious[j]
             newly_infected[0] = initial_infectious[j]
             susceptible[0] = initial_susceptible
-
+            recovered[0] = 0
+            
             # SIMULATION
             for day in range(modeling_duration - 1):
                 total_infected[day] = min(
@@ -55,6 +59,8 @@ class AgeGroupBRModel(Model):
                     ),
                     rho,
                 )
+
+                recovered[day] = initial_susceptible - susceptible[day] - total_infected[day]
 
                 newly_infected[day + 1] = min(
                     sum(
@@ -67,3 +73,6 @@ class AgeGroupBRModel(Model):
                 susceptible[day + 1] = susceptible[day] - newly_infected[day + 1]
 
             self.newly_infected += list(newly_infected)
+            self.prevalence += list(total_infected)
+            self.recovered += list(recovered)
+
