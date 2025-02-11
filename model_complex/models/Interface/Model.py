@@ -14,6 +14,7 @@ class Model:
     ci_params: list[ModelParams] = None
     newly_infected: list = None
     prevalence: list = None
+    recovered: list = None
 
     def __init__(self):
         """
@@ -22,7 +23,7 @@ class Model:
         self.alpha_dim = 0
         self.beta_dim = 0
 
-    def simulate(self, pars: ModelParams, modeling_duration: int):
+    def simulate(self, params: ModelParams, modeling_duration: int):
         pass
 
     def br_function(self, day: int) -> int:
@@ -50,14 +51,11 @@ class Model:
     def get_daily_newly_infected_by_group(self):
         return np.array_split(self.newly_infected, self.GROUPS_NUMBER)
 
-
     def get_weekly_newly_infected(self):
         return np.array(self.newly_infected).reshape(-1, 7).sum(axis=1)
-    
+
     def get_weekly_newly_infected_by_group(self):
         return self.get_weekly_newly_infected().reshape(self.alpha_dim, -1)
-    
-
 
     def get_daily_prevalence(self):
         return self.prevalence
@@ -65,14 +63,11 @@ class Model:
     def get_daily_prevalence_by_group(self):
         return np.array_split(self.prevalence, self.GROUPS_NUMBER)
 
-
     def get_weekly_prevalence(self):
         return np.array(self.prevalence).reshape(-1, 7).sum(axis=1)
-    
+
     def get_weekly_prevalence_by_group(self):
         return self.get_weekly_prevalence().reshape(self.alpha_dim, -1)
-
-
 
     def get_daily_recovered(self):
         return self.recovered
@@ -80,13 +75,11 @@ class Model:
     def get_daily_recovered_by_group(self):
         return np.array_split(self.recovered, self.GROUPS_NUMBER)
 
-
     def get_weekly_recovered(self):
         return np.array(self.recovered).reshape(-1, 7).sum(axis=1)
-    
+
     def get_weekly_recovered_by_group(self):
         return self.get_weekly_recovered().reshape(self.alpha_dim, -1)
-    
 
     def set_best_params(self, best_params: ModelParams):
         self.calibration_params = best_params

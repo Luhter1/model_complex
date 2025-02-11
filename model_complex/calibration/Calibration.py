@@ -13,7 +13,7 @@ class Calibration:
         self,
         model: Model,
         data: list,
-        model_pars: ModelParams,
+        model_params: ModelParams,
     ) -> None:
         """
         Calibration class
@@ -26,8 +26,8 @@ class Calibration:
         :param rho: People's population
         """
         self.model = model
-        self.model_pars = model_pars
-        self.discretisation = data.attrs['discretisation']
+        self.model_params = model_params
+        self.time_step = data.attrs["time_step"]
         self.data = data.drop(columns=["datetime"]).to_numpy().T.flatten()
 
     def abc_calibration(self, sample=100, epsilon=3000):
@@ -35,8 +35,8 @@ class Calibration:
         ABC.calibrate(
             model=self.model,
             data=self.data,
-            discretisation=self.discretisation,
-            model_pars = self.model_pars,
+            time_step=self.time_step,
+            model_params=self.model_params,
             sample=sample,
             epsilon=epsilon,
         )
@@ -46,8 +46,8 @@ class Calibration:
         Optuna.calibrate(
             model=self.model,
             data=self.data,
-            discretisation=self.discretisation,
-            model_pars = self.model_pars,
+            time_step=self.time_step,
+            model_params=self.model_params,
             n_trials=n_trials,
         )
 
@@ -56,8 +56,8 @@ class Calibration:
         Annealing.calibrate(
             model=self.model,
             data=self.data,
-            discretisation=self.discretisation,
-            model_pars = self.model_pars,
+            time_step=self.time_step,
+            model_params=self.model_params,
         )
 
     def mcmc_calibration(
@@ -69,8 +69,8 @@ class Calibration:
         MCMC.calibrate(
             model=self.model,
             data=self.data,
-            discretisation=self.discretisation,
-            model_pars = self.model_pars,
+            time_step=self.time_step,
+            model_params=self.model_params,
             sample=sample,
             epsilon=epsilon,
         )

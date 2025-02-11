@@ -14,7 +14,7 @@ class AgeGroupBRModel(Model):
         self.alpha_dim = 2
         self.beta_dim = 4
 
-    def simulate(self, pars: ModelParams, modeling_duration: int):
+    def simulate(self, params: ModelParams, modeling_duration: int):
         """
         Download epidemiological excel data file from the subdirectory of epid_data.
         epid_data directory looks like 'epid_data/{city}/epid_data.xlsx'.
@@ -27,10 +27,10 @@ class AgeGroupBRModel(Model):
 
         :return:
         """
-        alpha = pars.alpha
-        beta = pars.beta
-        initial_infectious = pars.initial_infectious
-        rho = pars.population_size
+        alpha = params.alpha
+        beta = params.beta
+        initial_infectious = params.initial_infectious
+        rho = params.population_size
 
         self.newly_infected = []
         self.prevalence = []
@@ -48,7 +48,7 @@ class AgeGroupBRModel(Model):
             newly_infected[0] = initial_infectious[j]
             susceptible[0] = initial_susceptible
             recovered[0] = 0
-            
+
             # SIMULATION
             for day in range(modeling_duration - 1):
                 total_infected[day] = min(
@@ -60,7 +60,9 @@ class AgeGroupBRModel(Model):
                     rho,
                 )
 
-                recovered[day] = initial_susceptible - susceptible[day] - total_infected[day]
+                recovered[day] = (
+                    initial_susceptible - susceptible[day] - total_infected[day]
+                )
 
                 newly_infected[day + 1] = min(
                     sum(
@@ -75,4 +77,3 @@ class AgeGroupBRModel(Model):
             self.newly_infected += list(newly_infected)
             self.prevalence += list(total_infected)
             self.recovered += list(recovered)
-

@@ -14,7 +14,7 @@ class TotalBRModel(Model):
         self.alpha_dim = 1
         self.beta_dim = 1
 
-    def simulate(self, pars: ModelParams, modeling_duration: int):
+    def simulate(self, params: ModelParams, modeling_duration: int):
         """
         Download epidemiological excel data file from the subdirectory of epid_data.
         epid_data directory looks like 'epid_data/{city}/epid_data.xlsx'.
@@ -28,10 +28,10 @@ class TotalBRModel(Model):
         :return:
         """
 
-        alpha = pars.alpha
-        beta = pars.beta
-        initial_infectious = pars.initial_infectious
-        rho = pars.population_size
+        alpha = params.alpha
+        beta = params.beta
+        initial_infectious = params.initial_infectious
+        rho = params.population_size
 
         # SETTING UP INITIAL CONDITIONS
         initial_susceptible = int(alpha[0] * rho)

@@ -64,7 +64,7 @@ class EpidData:
             String of the form "mm-dd-yy"
         :param end: End date for extraction
             String of the form "mm-dd-yy"
-        :param regime: Name of regime. Allowed strings: 'total', 'age', 'strain'.
+        :param type: Name of type. Allowed strings: 'total', 'age', 'strain'.
         """
         self.strain_dict = {
             "A (субтип не определен)": 0,
@@ -140,11 +140,11 @@ class EpidData:
             & (self.cases_df["datetime"] < self.end_time)
         ]
 
-    def __transform_data_for_regime(self, regime: str) -> None:
+    def __transform_data_for_type(self, type: str) -> None:
         """
-        Transform data for each regime
+        Transform data for each type
 
-        :param regime: Name of regime
+        :param type: Name of type
 
         :return:
         """
@@ -154,12 +154,12 @@ class EpidData:
             ["real_cases_strain_1", "real_cases_strain_2", "real_cases_strain_3"]
         ].sum(axis=1)
 
-        if regime == self.REGIME_TOTAL:
+        if type == self.REGIME_TOTAL:
             self.returned_df = self.returned_df[
                 ["datetime", "total_cases", "total_population"]
             ]
 
-        elif regime == self.REGIME_AGE:
+        elif type == self.REGIME_AGE:
             # sum up cases from age groups: 0-2, 3-6, 7-14
             # because we work with 0-14 and 15+
             # TODO: think about nan values. In epidemic data nan != 0.
@@ -209,19 +209,19 @@ class EpidData:
         deltatime = self.returned_df["datetime"]
         deltadays = (deltatime.iloc[1] - deltatime.iloc[0]).days
 
-        self.returned_df.attrs = {"discretisation": "week" if deltadays==7 else "day"}
+        self.returned_df.attrs = {"time_step": "week" if deltadays == 7 else "day"}
 
-    def get_wave_data(self, regime: str) -> pd.DataFrame:
+    def get_wave_data(self, type: str) -> pd.DataFrame:
         """
         Obtaining data for the epidemiological wave
 
-        :param regime: Name of regime
+        :param type: Name of type
 
         :return: Epidemiological wave
         """
         self.__get_time_period()
         assert isinstance(self.returned_df, pd.DataFrame)
-        self.__transform_data_for_regime(regime)
+        self.__transform_data_for_type(type)
         self.__set_timedelta()
 
         return self.returned_df
@@ -245,9 +245,11 @@ class EpidData:
         Obtaining data for calibration
         :return: Data for calibration
         """
-        return self.returned_df.drop(
-            columns=["total_population"]
-        )
-    
+        return self.returned_df.drop(columns=["total_population"])
+
     def get_duration(self) -> int:
-        return len(self.returned_df)*7 if self.returned_df.attrs["discretisation"] == "week" else len(self.returned_df)
+        return (
+            len(self.returned_df) * 7
+            if self.returned_df.attrs["time_step"] == "week"
+            else len(self.returned_df)
+        )

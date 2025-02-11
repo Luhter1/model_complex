@@ -1,6 +1,13 @@
 from .calibration import Calibration, Forecast
-from .epid_data import EpidData
+from .epid_data import EpidData, InfluenzaData
 from .models import FactoryBRModel
 from .utils import ModelParams
 
-__all__ = ["Calibration", "Forecast", "EpidData", "FactoryBRModel", "ModelParams"]
+__all__ = [
+    "Calibration",
+    "Forecast",
+    "EpidData",
+    "FactoryBRModel",
+    "ModelParams",
+    "InfluenzaData",
+]

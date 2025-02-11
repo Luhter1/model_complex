@@ -16,4 +16,3 @@ class ModelParams:
     beta: list[float]
     population_size: int
     initial_infectious: list[float]
-    # time_stamp: np.array
