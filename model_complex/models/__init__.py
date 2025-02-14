@@ -1,4 +1,4 @@
-from .FactoryBRModel import FactoryBRModel
+from .FactoryModel import FactoryModel
 from .Interface import Model
 
-__all__ = ["FactoryBRModel", "Model"]
+__all__ = ["FactoryModel", "Model"]

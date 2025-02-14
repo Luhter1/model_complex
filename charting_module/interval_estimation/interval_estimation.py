@@ -2,13 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from model_complex import Calibration, EpidData, FactoryBRModel, ModelParams
+from model_complex import Calibration, FactoryModel, ModelParams
 
 
-def interval_estimation_plot(
-    st_time, end_time, path, city, method, type, save_path, epsilon
-):
-    epid_data = EpidData(city=city, path=path, start_time=st_time, end_time=end_time)
+def interval_estimation_plot(epid_data, city, method, type, save_path, epsilon=3000):
 
     epid_data.get_wave_data(type=type)
     data = epid_data.get_data()
@@ -18,23 +15,27 @@ def interval_estimation_plot(
         population_size=epid_data.get_rho() // 10,
         initial_infectious=[100],
     )
+    model = FactoryModel.get_model(type)
 
+    # при добавлении новых моделей, нужно эту часть обновлять,
+    # либо вывести в параметры функции
     if type == "age":
         model_params.initial_infectious = [100, 100]
-        model = FactoryBRModel.age_group()
         label_alpha = {0: "0-14 years", 1: "15+ years"}
-
     else:
-        model = FactoryBRModel.total()
         label_alpha = {0: "total"}
+
+    color = {0: "blue", 1: "orange"}
 
     calibration = Calibration(model, data, model_params)
 
+    # надо поменять при добавлении новых методов
     if method == "abc":
         calibration.abc_calibration(epsilon=epsilon)
     else:
         calibration.mcmc_calibration(epsilon=epsilon)
 
+    # все ниже не должно меняться при добавлении новых моделей
     alpha = []
     beta = []
 
@@ -57,12 +58,8 @@ def interval_estimation_plot(
         sns.histplot(alpha[:, 0], ax=axes, kde=True)
         axes.set_title(f"{label_alpha[0]} alpha")
 
-    plt.savefig(
-        save_path + f"IE_alpha_{city}_{method}_{type}_{st_time}_{end_time}.png", dpi=600
-    )
-    plt.savefig(
-        save_path + f"IE_alpha_{city}_{method}_{type}_{st_time}_{end_time}.pdf", dpi=600
-    )
+    plt.savefig(save_path + f"IE_alpha_{city}_{method}_{type}.png", dpi=600)
+    plt.savefig(save_path + f"IE_alpha_{city}_{method}_{type}.pdf", dpi=600)
     plt.clf()
 
     if type == "age":
@@ -78,10 +75,6 @@ def interval_estimation_plot(
 
     fig.suptitle("beta interval estimation")
 
-    plt.savefig(
-        save_path + f"IE_beta_{city}_{method}_{type}_{st_time}_{end_time}.png", dpi=600
-    )
-    plt.savefig(
-        save_path + f"IE_beta_{city}_{method}_{type}_{st_time}_{end_time}.pdf", dpi=600
-    )
+    plt.savefig(save_path + f"IE_beta_{city}_{method}_{type}.png", dpi=600)
+    plt.savefig(save_path + f"IE_beta_{city}_{method}_{type}.pdf", dpi=600)
     plt.clf()

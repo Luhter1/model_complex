@@ -17,9 +17,7 @@ class Forecast:
     ):
 
         ci_params = model.get_ci_params()
-        calibration_duration = len(
-            data
-        )  # if self.returned_df.attrs["time_step"] == "week" else len(self.returned_df)
+        calibration_duration = len(data)
         group_cnt = len(ci_params[0].initial_infectious)
 
         if data.attrs["time_step"] == "week":

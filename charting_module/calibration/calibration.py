@@ -1,26 +1,23 @@
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 
-from model_complex import Calibration, EpidData, FactoryBRModel, ModelParams
+from model_complex import Calibration, FactoryModel, ModelParams
 
-from ..epid_results import prevalence_plot, recovered_plot
+# from ..epid_results import prevalence_plot, recovered_plot
 
 
 def calibration_plot(
-    st_time,
-    end_time,
-    path,
+    epid_data,
     city,
     method,
-    regim,
+    type,
     save_path="./",
     epsilon=3000,
     is_prevalence_plot=False,
     is_recovered_plot=False,
 ):
-    epid_data = EpidData(city=city, path=path, start_time=st_time, end_time=end_time)
 
-    epid_data.get_wave_data(type=regim)
+    epid_data.get_wave_data(type=type)
     data = epid_data.get_data()
     dur = epid_data.get_duration()
     plot_data = epid_data.prepare_for_plot()
@@ -31,14 +28,15 @@ def calibration_plot(
         initial_infectious=[100],
     )
 
-    if regim == "age":
+    model = FactoryModel.get_model(type)
+
+    if type == "age":
         model_params.initial_infectious = [100, 100]
-        model = FactoryBRModel.age_group()
         label = {0: "0-14 years", 1: "15+ years"}
 
     else:
-        model = FactoryBRModel.total()
         label = {0: "total"}
+
     color = {0: "blue", 1: "orange"}
 
     if data.attrs["time_step"] == "week":
@@ -58,29 +56,29 @@ def calibration_plot(
     else:
         calibration.optuna_calibration()
 
-    if is_prevalence_plot:
-        prevalence_plot(
-            st_time,
-            end_time,
-            city,
-            method,
-            regim,
-            save_path,
-            model,
-            data.attrs["time_step"],
-        )
+    # if is_prevalence_plot:
+    #     prevalence_plot(
+    #         st_time,
+    #         end_time,
+    #         city,
+    #         method,
+    #         type,
+    #         save_path,
+    #         model,
+    #         data.attrs["time_step"],
+    #     )
 
-    if is_recovered_plot:
-        recovered_plot(
-            st_time,
-            end_time,
-            city,
-            method,
-            regim,
-            save_path,
-            model,
-            data.attrs["time_step"],
-        )
+    # if is_recovered_plot:
+    #     recovered_plot(
+    #         st_time,
+    #         end_time,
+    #         city,
+    #         method,
+    #         type,
+    #         save_path,
+    #         model,
+    #         data.attrs["time_step"],
+    #     )
 
     for ci_par in model.get_ci_params():
         model.simulate(params=ci_par, modeling_duration=dur)
@@ -102,9 +100,9 @@ def calibration_plot(
         )
         plt.plot(plot_data[:, i], "--o", color=color[i])
 
-    plt.title(f"{method.capitalize()}, {regim.capitalize()}")
+    plt.title(f"{method.capitalize()}, {type.capitalize()}")
     plt.legend()
 
-    plt.savefig(save_path + f"{city}_{method}_{regim}_{st_time}_{end_time}.png", dpi=600)
-    plt.savefig(save_path + f"{city}_{method}_{regim}_{st_time}_{end_time}.pdf", dpi=600)
+    plt.savefig(save_path + f"{city}_{method}_{type}.png", dpi=600)
+    plt.savefig(save_path + f"{city}_{method}_{type}.pdf", dpi=600)
     plt.clf()

@@ -1,15 +1,17 @@
-from .Interface import Model
 from .Models import AgeGroupBRModel, TotalBRModel
 
 
-class FactoryBRModel:
-    @classmethod
-    def total(self) -> Model:
-        return TotalBRModel()
+class FactoryModel:
 
     @classmethod
-    def age_group(self) -> Model:
-        return AgeGroupBRModel()
+    def get_model(self, type):
+        match type:
+            case "total":
+                return TotalBRModel()
+            case "age":
+                return AgeGroupBRModel()
+
+        raise Exception("Модель не существует")
 
     # Arguments for models using networks passed for
     # creation of graph once during initialization.
